@@ -4,128 +4,188 @@
 //
 //  Created by 송재훈 on 2023/03/15.
 
-
 import SwiftUI
 import SpriteKit
+import PencilKit
 
-class GameScene: SKScene {
-        var background = "Image"
-//    var background = SKSpriteNode(imageNamed: "Image")
+class StateViewModel: ObservableObject {
+    @Published var isInt : Double = 100.0
+}
+
+var isin : Double = 100.0
+
+struct PhysicsCategory {
+    static let player: UInt32 = 0b0001
+    static let alien: UInt32 = 0b0010
+}
+
+class GameScene: SKScene, SKPhysicsContactDelegate {
+    var winner = SKLabelNode(fontNamed: "Chalkduster")
+    var alienTimer = Timer()
+    var alienInterval: TimeInterval = 10.0
     
-    override func didMove(to view: SKView) {
-        
-        let groundCircle = SKShapeNode(ellipseOf: CGSize(width: frame.size.width * 3, height: frame.size.height))
-        
-        groundCircle.strokeColor = .black
-//        arc.fillColor = .green
-        
-        groundCircle.position = CGPoint(x: frame.size.width / 2, y: -frame.size.height / 4)
-        addChild(groundCircle)
-        
-//        let path = CGMutablePath()
-//        path.addArc(center: CGPoint.zero,
-//                    radius: frame.size.width / 2,
-//                    startAngle: .pi,
-//                    endAngle: 0,
-//                    clockwise: true)
-//
-//        let ball = SKShapeNode(path: path)
-//
-//        ball.lineWidth = 1
-//        ball.fillColor = .blue
-//        ball.strokeColor = .black
-//        ball.glowWidth = 0.5
-//        ball.position = CGPoint(x: 300, y: 300)
-        
-//        addChild(ball)
-        
-//        let grass = SKShapeNode(path: CGPath()
-        
-//        physicsBody = SKPhysicsBody(edgeLoopFrom: frame)
-        
-        backgroundColor = UIColor(.white)
-        
-//        groundCircle.physicsBody = SKp
-//
-//        background.size = CGSize(width: frame.size.width, height: frame.size.height / 5)
-//        background.position = CGPoint(x: frame.size.width / 2, y: frame.size.height / 6)
-//        addChild(background)
-        
-//        moveBackground(image: background, y: -500, z: -5, duration: 10, needPhysics: false, size: self.size)
+    @StateObject var stateViewModel = StateViewModel()
+    
+    var score : Double = 100.0 {
+        didSet {
+            stateViewModel.isInt -= 10
+        }
     }
     
-//    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-//
-//        guard let touch = touches.first else { return }
-//
-//        let location = touch.location(in: self)
-//
-//        let box = SKSpriteNode(color: .red, size: CGSize(width: 50, height: 50))
-//
-//        box.position = location
-//
-//        box.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 50, height: 50))
-//
-//        addChild(box)
-//    }
+//    @StateObject var isInt = StateViewModel()
     
-    func moveBackground(image: String, y: CGFloat, z: CGFloat, duration: Double, needPhysics: Bool, size: CGSize){
-        for i in 0...1{
-            let background = SKSpriteNode(imageNamed: image)
-
-            background.anchorPoint = .zero
-            background.position = CGPoint(x: size.width * CGFloat(i), y: y)
-            background.size = size
-            background.zPosition = z
-
-            if needPhysics {
-                background.physicsBody = SKPhysicsBody(rectangleOf: background.size)
-                background.physicsBody?.isDynamic = false
-                background.physicsBody?.contactTestBitMask = 1
-                background.name = "background"
-            }
-
-            let move = SKAction.moveBy(x: -background.size.width, y: 0, duration: duration)
-            let back = SKAction.moveBy(x: background.size.width, y: 0, duration: 0)
-
-            let sequence = SKAction.sequence([move,back])
-            let repeatAction = SKAction.repeatForever(sequence)
-
-            addChild(background)
-
-            background.run(repeatAction)
+    override func didMove(to view: SKView) {
+        backgroundColor = UIColor(.white)
+        self.physicsWorld.contactDelegate = self
+        self.physicsWorld.gravity = CGVector(dx: 0, dy: 0)
+        
+        addPlayer()
+        
+        alienTimer = setTimer(interval: alienInterval, function: self.addAlien)
+        
+        winner.fontSize = 65
+        winner.fontColor = SKColor.black
+        winner.position = CGPoint(x: frame.midX, y: frame.midY)
+        addChild(winner)
+    }
+    
+    override func update(_ currentTime: TimeInterval) {
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        var location: CGPoint!
+        
+        if let touch = touches.first {
+            location = touch.location(in: self)
+        }
+        
+        let touchedNodes = nodes(at: location)
+        let frontTouchedNode = atPoint(location).name
+        let frontTouches = atPoint(location).physicsBody?.categoryBitMask
+        
+        if frontTouches == nil {
+            score -= 1
+        }
+        else {
+        }
+        winner.text = "\(score)"
+    }
+    
+    func setTimer(interval: TimeInterval, function: @escaping () -> Void) -> Timer {
+        let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
+            function()
+        }
+        timer.tolerance = interval * 0.2
+        
+        return timer
+    }
+    
+    func addAlien() {
+        let alien = SKSpriteNode(imageNamed: "aImage")
+        
+        alien.size = CGSize(width: frame.size.width * 0.05, height: frame.size.height * 0.05)
+        alien.position = CGPoint(x: frame.size.width * 0.5, y: frame.size.height * 0.9)
+        alien.name = "alien"
+        
+        alien.physicsBody = SKPhysicsBody(circleOfRadius: alien.size.height / 2)
+        alien.physicsBody?.categoryBitMask = PhysicsCategory.alien
+        alien.physicsBody?.affectedByGravity = false
+        alien.physicsBody?.isDynamic = false
+        alien.physicsBody?.contactTestBitMask = PhysicsCategory.player
+        alien.physicsBody?.collisionBitMask = PhysicsCategory.player
+        
+        self.addChild(alien)
+        
+        let moveAct = SKAction.moveBy(x: 0, y: -alien.size.height, duration: 0.1)
+        let waitAct = SKAction.wait(forDuration: 5)
+        
+        let sequence = SKAction.sequence([moveAct, waitAct])
+        alien.run(SKAction.repeatForever(sequence))
+    }
+    
+    func addPlayer() {
+        let player = SKSpriteNode(color: .clear, size: CGSize(width: frame.size.width * 2, height: frame.size.height * 0.5))
+        
+        player.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: frame.size.width * 2, height: frame.size.height * 0.5))
+        
+        player.physicsBody?.affectedByGravity = false
+        
+        player.name = "player"
+        player.physicsBody?.categoryBitMask = PhysicsCategory.player
+        player.physicsBody?.collisionBitMask = PhysicsCategory.player
+        
+        self.addChild(player)
+    }
+    
+    func addCanvasView() {
+    }
+    
+    func didBegin(_ contact: SKPhysicsContact) {
+        var firstBody: SKPhysicsBody
+        var secondBody: SKPhysicsBody
+        
+        if contact.bodyA.categoryBitMask < contact.bodyB.categoryBitMask {
+            firstBody = contact.bodyA
+            secondBody = contact.bodyB
+        } else {
+            firstBody = contact.bodyB
+            secondBody = contact.bodyA
+        }
+    
+        if firstBody.node?.name == "player" && secondBody.node?.name == "alien" {
+            secondBody.node?.removeFromParent()
         }
     }
 }
 
+// MARK: ABCDEFGHIJKLMNOPQRSTUVWXYZ
+// MARK: abcdefghijklmnopqrstuvwxyz
+
 struct DisplayView: View {
+    @State var canvasView = PKCanvasView()
+    @State var backgroundView = PKCanvasView()
+    @State var nowAlphabet : String = "Z"
+    
+    @State var currentHP : Double = 100
+    
+    @StateObject var isInt = StateViewModel()
+    
     var scene: SKScene {
         let scene = GameScene()
-        scene.size = CGSize(width: 1000, height: 1200)
-    
+        scene.size = CGSize(width: UIScreen.main.bounds.width, height : UIScreen.main.bounds.height)
+        
         scene.scaleMode = .fill
+
         return scene
     }
     
     var body: some View {
-        
-        ZStack(){
+        GeometryReader { geo in
+            
             SpriteView(scene: scene)
                 .ignoresSafeArea()
-                .frame(width: 1000, height: 1200)
-            DrawingHelperView()
-                .frame(width: 300, height: 300)
-                .offset(x:-300)
+                .frame(width: geo.size.width, height: geo.size.height)
             
-            VStack(){
-                    Image("ufo")
-                        .resizable()
-                        .frame(width: 200, height: 200)
-                    Image("aImage")
-                        .resizable()
-                        .frame(width: 200, height: 200)
-            }
-            .offset(x:400)
+            TextGeneratorView(backgroundCanvasView: $backgroundView, nowAlphabet: $nowAlphabet)
+                .frame(width: geo.size.width, height: geo.size.height * 0.25)
+                .border(.pink)
+                .frame(maxHeight: .infinity, alignment: .bottom)
+            
+            AnimateView(canvasView: $canvasView, backgroundCanvasView: $backgroundView)
+                .frame(width: geo.size.width, height: geo.size.height * 0.25)
+                .border(.pink)
+                .frame(maxHeight: .infinity, alignment: .bottom)
+
+            CanvasView(canvasView: $canvasView)
+                .border(.pink)
+                .frame(width: geo.size.width, height: geo.size.height * 0.25)
+                .frame(maxHeight: .infinity, alignment: .bottom)
+                
+            HPView(currentHP: $isInt.isInt)
+
+            ButtonActionView(score: $isInt.isInt, canvasView: $canvasView, backgroundCanvasView: $backgroundView)
+                .offset(y: geo.size.height * 0.06)
+
         }
     }
 }

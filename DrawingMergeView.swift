@@ -15,106 +15,80 @@ import PencilKit
 // TODO: 애니메이션 추가 구현
 
 struct DrawingMergeView: View {
-    
     @State var backgroundCanvasView = PKCanvasView()
     @State var canvasView = PKCanvasView()
     @State var score : Double = 0
-    @State var but : Int = 0
-    @State var incorrectStrokeCount = 0
     @State var strokeCounter : Int = 0
-    
-    @State var isScoring : Bool = false
-    @State var isReseting : Bool = false
-    
-    var practiceScale: CGFloat = 2.0
-    var animationSpeed: CGFloat = 1.0
-    var difficulty: CGFloat = 5.0
+    @State var nowAlphabet : String = "A"
+    @State var incorrectStrokeCount = 0
+//    var animationSpeed: CGFloat = 1.0
     
     func Scoring() {
-        let testDrawing = backgroundCanvasView.drawing
-        let strokeIndex = canvasView.drawing.strokes.count - 1
-
-        // Score the last stroke.
-        guard let lastStroke = canvasView.drawing.strokes.last else { return }
-        guard strokeIndex < testDrawing.strokes.count else { return }
-
-//                isUpdatingDrawing = true
-
-        // Stroke matching.
-        let threshold: CGFloat = difficulty * practiceScale
-        let distance = lastStroke.discreteFrechetDistance(to: testDrawing.strokes[strokeIndex], maxThreshold: threshold)
-
-        if distance < threshold {
-            // Adjust the correct stroke to have a green ink.
-            canvasView.drawing.strokes[strokeIndex].ink.color = .green
-
-            // If the user has finished, show the final score.
-            if strokeIndex + 1 >= testDrawing.strokes.count {
-                //                performSegue(withIdentifier: "showScore", sender: self)
-            }
-        } else {
-            //            // If the stroke drawn was bad, remove it so the user can try again.
-            canvasView.drawing.strokes.removeLast()
-            incorrectStrokeCount += 1
+        let lastIndex = canvasView.drawing.strokes.count
+        
+        var difficulty: CGFloat = 5.0
+        var practiceScale: CGFloat = 2.0
+        
+        //        guard let lastStroke = canvasView.drawing.strokes.last else { return }
+        //        guard strokeIndex < testDrawing.strokes.count else { return }
+        
+        for nowIndex in 0..<lastIndex {
+            let backDrawing = backgroundCanvasView.drawing
+            let nowStroke = canvasView.drawing.strokes[nowIndex]
+            
+            let threshold: CGFloat = difficulty * practiceScale
+            let distance = nowStroke.discreteFrechetDistance(to: backDrawing.strokes[nowIndex], maxThreshold: threshold)
+            
+            if distance < threshold {
+               canvasView.drawing.strokes[nowIndex].ink.color = .green
+           }
+           else {
+//               canvasView.drawing.strokes.remove(at: nowIndex)
+               canvasView.drawing.strokes[nowIndex].ink.color = .red
+               incorrectStrokeCount += 1
+           }
+            
+            score = {
+                let correctStrokeCount = canvasView.drawing.strokes.count
+                return 1.0 / (1.0 + Double(incorrectStrokeCount) / Double(1 + correctStrokeCount))
+            }()
         }
-        score = {
-            let correctStrokeCount = canvasView.drawing.strokes.count
-            return 1.0 / (1.0 + Double(incorrectStrokeCount) / Double(1 + correctStrokeCount))
-        }()
-
-        //        updateScore()
-        //        startAnimation(afterDelay: PracticeViewController.nextStrokeAnimationTime)
-//                isUpdatingDrawing = false
     }
     
     func Reseting() {
         canvasView.drawing.strokes.removeAll()
+        incorrectStrokeCount = 0
     }
     
     var body: some View {
+        GeometryReader() { geo in
+            TextGeneratorView(backgroundCanvasView: $backgroundCanvasView, nowAlphabet: $nowAlphabet)
 
-        VStack(){
-            HStack(){
-                Button {
-                    Reseting()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                }
-                Text("\(Int(score * 100))")
-                Button {
-                    Scoring()
-                } label: {
-                    Image(systemName: "return.right")
-                }
-            }
-            
-            ZStack(){
-                TextGeneratorView(backgroundCanvasView: $backgroundCanvasView)
+            AnimateView(canvasView: $canvasView, backgroundCanvasView: $backgroundCanvasView)
 
-                AnimateView(canvasView: $canvasView, backgroundCanvasView: $backgroundCanvasView)
-                CanvasView(canvasView: $canvasView, strokeCounter: $strokeCounter)
-            }
+            CanvasView(canvasView: $canvasView)
+
         }
     }
 }
 
-
 struct TextGeneratorView: UIViewRepresentable {
     @Binding var backgroundCanvasView: PKCanvasView
+    @Binding var nowAlphabet : String
     
     func generateText() {
         let textGenerator = TextGenerator()
         
-        backgroundCanvasView.drawing = textGenerator.synthesizeTextDrawing(text: "A", practiceScale: CGFloat(5.0), lineWidth: 0)
+        backgroundCanvasView.drawing = textGenerator.synthesizeTextDrawing(text: nowAlphabet)
         
-        // ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
+        // MARK: ABCDEFGHIJKLMNOPQRSTUVWXYZ
+        // MARK: abcdefghijklmnopqrstuvwxyz
     }
 
     func makeUIView(context: Context) -> PKCanvasView {
         generateText()
-        
         backgroundCanvasView.backgroundColor = .clear
-
+        
         return backgroundCanvasView
     }
 
@@ -124,7 +98,6 @@ struct TextGeneratorView: UIViewRepresentable {
 
 struct CanvasView: UIViewRepresentable {
     @Binding var canvasView: PKCanvasView
-    @Binding var strokeCounter: Int
     
     var ink: PKInkingTool {
         PKInkingTool(.pen, color: .systemBlue, width: 10)
@@ -148,71 +121,78 @@ struct AnimateView: UIViewRepresentable {
     
     static var animatingStroke: PKStroke?
     @State var animationParametricValue: CGFloat = 0
-    @State var animationLastFrameTime = Date()
     @State var animationSpeed: CGFloat = 1.0
     @State var animationMarkerLayer = CALayer()
     @State var animationStartMarkerLayer = CALayer()
     @State var animationTimer: Timer?
-    
     @State var nextStrokeCount: Int = 0
+    @State var maxStrokeCount: Int = 0
     @State var nowStrokeCount: CGFloat = 0
+    
+    @State var isRepeat: Bool = true
+    
+    @State var ca = CALayer()
     
     static let repeatStrokeAnimationTime: TimeInterval = 2
     static let nextStrokeAnimationTime: TimeInterval = 0.5
     
     let viewRoot: UIView = UIView()
     
+    // TODO: 백드로잉 말고 캔버스드로잉 수정
     func animateStart() {
         let nextStrokeIndex = canvasView.drawing.strokes.count
         
         guard nextStrokeIndex < backgroundCanvasView.drawing.strokes.count else {
             // Hide the animation markers.
-            animationMarkerLayer.opacity = 0.0
-            animationStartMarkerLayer.opacity = 0.0
+//            animationMarkerLayer.opacity = 0.0
+//            animationStartMarkerLayer.opacity = 0.0
+            
+            dump(nextStrokeIndex)
+            dump(backgroundCanvasView.drawing.strokes.count)
             return
         }
-
         let strokeToAnimate = backgroundCanvasView.drawing.strokes[nextStrokeIndex]
         AnimateView.animatingStroke = strokeToAnimate
         
         animationParametricValue = 0
-        animationLastFrameTime = Date()
+        
+        animationStartMarkerLayer.position = strokeToAnimate.path.interpolatedLocation(at: 0).applying(strokeToAnimate.transform)
+//        animationStartMarkerLayer.position = CGPoint(x: 600, y: 0)
+        animationStartMarkerLayer.opacity = 1.0
+        
+        ca.position = CGPoint(x: 100, y: 100)
+        
         animationTimer?.invalidate()
         
-        
-        animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 10, repeats: true) { _ in
-            animationStep()
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 10, repeats: true){ _ in
+                animationStep()
         }
-        animationStartMarkerLayer.position = strokeToAnimate.path.interpolatedLocation(at: 0).applying(strokeToAnimate.transform)
-        animationStartMarkerLayer.opacity = 1.0
     }
-    
+
     func animationStep() {
-        guard let animatingStroke = AnimateView.animatingStroke, animationParametricValue < CGFloat(animatingStroke.path.count - 1) else {
+        guard let animatingStroke = AnimateView.animatingStroke, animationParametricValue < CGFloat(Double(animatingStroke.path.count) - 0.5) else {
+            
+            animationTimer?.invalidate()
             
             _ = Timer.scheduledTimer(withTimeInterval: AnimateView.repeatStrokeAnimationTime, repeats: false) { _ in
-                
+            
+                animationMarkerLayer.opacity = 0
                 animationParametricValue = 0
-                nowStrokeCount = 0
+//                animationTimer?.invalidate()
+                
+                animateStart()
             }
             
             return
         }
         
-        
-        //        let currentTime = Date()
-        //        let delta = currentTime.timeIntervalSince(animationLastFrameTime)
-        //        animationParametricValue = animatingStroke.path.parametricValue(animationParametricValue,offsetBy: .time(delta))
-        animationParametricValue = nowStrokeCount
         animationMarkerLayer.position = animatingStroke.path.interpolatedLocation(at: animationParametricValue)
             .applying(animatingStroke.transform)
         animationMarkerLayer.opacity = 1
-        //        animationLastFrameTime = currentTime
-        
-        nowStrokeCount += 1
+        animationParametricValue += 0.5
     }
     
-    func makeUIView(context: Context) -> UIView {
+    func makeLayer() {
         animationMarkerLayer.frame = CGRect(x: 0, y: 0, width: 10, height: 10)
         animationMarkerLayer.backgroundColor = UIColor.red.cgColor
         animationMarkerLayer.cornerRadius = 5
@@ -223,79 +203,22 @@ struct AnimateView: UIViewRepresentable {
         animationStartMarkerLayer.borderWidth = 2
         animationStartMarkerLayer.cornerRadius = 8
         viewRoot.layer.addSublayer(animationStartMarkerLayer)
+        
+        
+        ca.frame = CGRect(x: 0, y: 0, width: 10, height: 10)
+        ca.backgroundColor = UIColor.red.cgColor
+        viewRoot.layer.addSublayer(ca)
+        
+        maxStrokeCount = backgroundCanvasView.drawing.strokes.count
+    }
     
+    func makeUIView(context: Context) -> UIView {
+        makeLayer()
+        
         animateStart()
         
         return viewRoot
     }
-    
-//    func animateNextStroke() {
-//        let nextStrokeIndex = canvasView.drawing.strokes.count
-//        guard nextStrokeIndex < backgroundCanvasView.drawing.strokes.count else {
-//            // Hide the animation markers.
-//            animationMarkerLayer.opacity = 0.0
-//            animationStartMarkerLayer.opacity = 0.0
-//            return
-//        }
-//
-//        let strokeToAnimate = backgroundCanvasView.drawing.strokes[nextStrokeIndex]
-//        AnimateView.animatingStroke = strokeToAnimate
-//        animationParametricValue = 0
-//        animationLastFrameTime = Date()
-//        animationTimer?.invalidate()
-//
-//        animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60, repeats: true) { _ in stepAnimation()}
-//
-//        // Setup the start marker layer.
-//        animationStartMarkerLayer.position = strokeToAnimate.path.interpolatedLocation(at: 0).applying(strokeToAnimate.transform)
-//        animationStartMarkerLayer.opacity = 1.0
-//    }
-//
-//    func startAnimation(afterDelay delay: TimeInterval) {
-//        // Animate the next stroke again after `delay`.
-//        stopAnimation()
-////        AnimateView.animatingStroke = nil
-//
-//        animationTimer = Timer.scheduledTimer(withTimeInterval: AnimateView.repeatStrokeAnimationTime, repeats: false) { _ in
-//            // Only animate the next stroke if another animation has not already started.
-//            if AnimateView.animatingStroke == nil {
-//                animateNextStroke()
-//
-//            }
-//        }
-//    }
-//
-//    func stopAnimation() {
-//        animationMarkerLayer.opacity = 0
-//        AnimateView.animatingStroke = nil
-//        animationTimer?.invalidate()
-//    }
-//
-//    func stepAnimation() {
-////        dump(AnimateView.animatingStroke)
-//        guard let animatingStroke = AnimateView.animatingStroke, animationParametricValue < CGFloat(animatingStroke.path.count - 1) else {
-//            ////             Animate the next stroke again, in `repeatStrokeAnimationTime` seconds.
-//            startAnimation(afterDelay: AnimateView.repeatStrokeAnimationTime)
-//
-//            return
-//        }
-//        let currentTime = Date()
-//        let delta = currentTime.timeIntervalSince(animationLastFrameTime)
-//
-//        animationParametricValue = animatingStroke.path.parametricValue(
-//            animationParametricValue,
-//            offsetBy: .time(delta * TimeInterval(animationSpeed)))
-//
-//        animationMarkerLayer.position = animatingStroke.path.interpolatedLocation(at: animationParametricValue)
-//            .applying(animatingStroke.transform)
-//        animationMarkerLayer.opacity = 1
-//        animationLastFrameTime = currentTime
-//
-////        dump(animatingStroke.path.parametricValue(
-////            animationParametricValue,
-////            offsetBy: .time(delta * TimeInterval(animationSpeed))))
-//    }
-    
     
     func updateUIView(_ uiView: UIView, context: Context) {
     }

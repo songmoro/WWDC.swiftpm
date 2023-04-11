@@ -59,7 +59,7 @@ struct TextGenerator {
         return nil
     }
     
-    func synthesizeTextDrawing(text: String, practiceScale: CGFloat, lineWidth: CGFloat) -> PKDrawing {
+    func synthesizeTextDrawing(text: String) -> PKDrawing {
         // Special case the PencilKit ligature.
         if text.lowercased() == "pencilkit" {
             return TextGenerator.pencilKitLigature
@@ -67,13 +67,15 @@ struct TextGenerator {
         
         var textDrawing = PKDrawing()
 //        let textMargin: CGFloat = 100
+        let practiceScale: CGFloat = 5.0
         let textMargin: CGFloat = 0
         let lineHeight: CGFloat = 80 * practiceScale
         let spaceWidth: CGFloat = 40 * practiceScale
         let letterSpacing: CGFloat = 2
-//        var letterPosition = CGPoint(x: textMargin, y: 200)
-        var letterPosition = CGPoint(x: -150, y: -150)
+        var letterPosition = CGPoint(x: 0, y: 0)
         var didJustWrap = false
+        
+        let lineWidth: CGFloat = 0
         
         // Layout the text by words.
         text.enumerateSubstrings(in: text.startIndex..., options: .byWords) { (word, _, _, _) in
@@ -104,15 +106,17 @@ struct TextGenerator {
                 
                 // Get the letter and align it.
                 letter.transform(using: CGAffineTransform(scaleX: practiceScale, y: practiceScale)
-                      .concatenating(CGAffineTransform(translationX: letterPosition.x, y: letterPosition.y)))
+                    .concatenating(CGAffineTransform(translationX: letterPosition.x, y: letterPosition.y)))
+//                letter.transform(using: CGAffineTransform(scaleX: practiceScale, y: practiceScale).concatenating(CGAffineTransform(translationX: xValue, y: yValue)))
+                
                 textDrawing.append(letter)
                 
                 // Move for the next letter.
-                letterPosition.x += letter.bounds.width + letterSpacing
+//                letterPosition.x += letter.bounds.width + letterSpacing
             }
             
             // Add a space.
-            letterPosition.x += spaceWidth
+//            letterPosition.x += spaceWidth
         }
         
         return textDrawing
@@ -133,7 +137,7 @@ struct TextGenerator {
                 let adjustedPoint = PKStrokePoint(
                     location: point.location,
                     timeOffset: point.timeOffset,
-                    size: CGSize(width: point.size.width * 0.8, height: point.size.height * 0.8),
+                    size: CGSize(width: point.size.width * 0.8, height: point.size.height * 0.8), // 폰트 두께
                     opacity: point.opacity,
                     force: point.force,
                     azimuth: point.azimuth,
@@ -151,8 +155,32 @@ struct TextGenerator {
             var letter = PKDrawing(strokes: adjustedStrokes[startIndex..<(startIndex + strokeCount)])
             
             // Normalize baselines based on drawing layout.
-            let baseline = CGFloat(strokeIndex / 7 * 81) + 140
-            letter.transform(using: CGAffineTransform(translationX: -letter.bounds.minX, y: -baseline))
+//            let baseline = CGFloat(strokeIndex / 7 * 81) + 140
+//            let baseline = CGFloat(strokeIndex / 7 * 81) + 70
+            let baseline = -letter.bounds.minY
+            let baseAxis = -letter.bounds.minX
+            let baseAxis2 = letter.bounds.height
+            let baseAxis3 = letter.bounds.width
+            let baseAxis4 = letter.bounds.maxX
+            let baseAxis5 = letter.bounds.minX
+            let baseAxis6 = letter.bounds.midX
+            let baseAxis7 = letter.bounds.standardized
+            let baseAxis8 = letter.bounds.origin
+            let baseAxiz = drawing.bounds.midX / 2
+            let baseAxiz2 = drawing.bounds.minX
+            let baseAxiz3 = drawing.bounds.maxX
+            let baseAxiz4 = drawing.bounds.size.width / 6
+            let baseAxiz5 = drawing.bounds.standardized
+            let baseAxiz6 = drawing.bounds.origin
+            let baseAxiz7 = drawing.bounds.size.width / 4
+            let baseAxiz8 = drawing.bounds.size.height / 2.25
+//            letter.transform(using: CGAffineTransform(translationX: baseAxis, y: baseline))
+            letter.transform(using: CGAffineTransform(translationX: baseAxis + 85, y: baseline - 70))
+            
+//            let baselineDouble = baseline * 2
+//            letter.transform(using: CGAffineTransform(translationX: baseAxis, y: baselineDouble))
+//            letter.transform(using: CGAffineTransform(translationX: baseAxiz4, y: baseAxiz8))
+//            letter.transform(using: CGAffineTransform(translationX: -letter.bounds.minX, y: -baseline))
             
             startIndex += strokeCount
             return letter

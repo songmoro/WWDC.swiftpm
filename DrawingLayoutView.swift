@@ -12,6 +12,7 @@ struct DrawingLayoutView: View {
         GeometryReader {geo in
             RoundedRectangle(cornerRadius: 10)
                 .stroke(.black)
+            DrawingMergeView()
             
             VStack(){
                 Divider()
