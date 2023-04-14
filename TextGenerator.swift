@@ -157,6 +157,7 @@ struct TextGenerator {
             // Normalize baselines based on drawing layout.
 //            let baseline = CGFloat(strokeIndex / 7 * 81) + 140
 //            let baseline = CGFloat(strokeIndex / 7 * 81) + 70
+//            UIScreen.main.bounds.width
             let baseline = -letter.bounds.minY
             let baseAxis = -letter.bounds.minX
             let baseAxis2 = letter.bounds.height

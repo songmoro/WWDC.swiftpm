@@ -62,7 +62,7 @@ struct DrawingMergeView: View {
     
     var body: some View {
         GeometryReader() { geo in
-            TextGeneratorView(backgroundCanvasView: $backgroundCanvasView, nowAlphabet: $nowAlphabet)
+//            TextGeneratorView(backgroundCanvasView: $backgroundCanvasView, nowAlphabet: $nowAlphabet)
 
             AnimateView(canvasView: $canvasView, backgroundCanvasView: $backgroundCanvasView)
 
@@ -72,29 +72,7 @@ struct DrawingMergeView: View {
     }
 }
 
-struct TextGeneratorView: UIViewRepresentable {
-    @Binding var backgroundCanvasView: PKCanvasView
-    @Binding var nowAlphabet : String
-    
-    func generateText() {
-        let textGenerator = TextGenerator()
-        
-        backgroundCanvasView.drawing = textGenerator.synthesizeTextDrawing(text: nowAlphabet)
-        
-        // MARK: ABCDEFGHIJKLMNOPQRSTUVWXYZ
-        // MARK: abcdefghijklmnopqrstuvwxyz
-    }
 
-    func makeUIView(context: Context) -> PKCanvasView {
-        generateText()
-        backgroundCanvasView.backgroundColor = .clear
-        
-        return backgroundCanvasView
-    }
-
-    func updateUIView(_ uiView: PKCanvasView, context: Context) {
-    }
-}
 
 struct CanvasView: UIViewRepresentable {
     @Binding var canvasView: PKCanvasView
