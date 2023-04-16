@@ -130,9 +130,9 @@ struct TextGenerator {
             var stroke = stroke
             // Adjust the stroke ink to be grey.
             stroke.ink = PKInk(.pen, color: TextGenerator.templateColor)
-            
             // Adjust the stroke widths to be more uniform.
             let newPoints = stroke.path.indices.compactMap { index -> PKStrokePoint? in
+                
                 let point = stroke.path[index]
                 let adjustedPoint = PKStrokePoint(
                     location: point.location,
@@ -157,29 +157,31 @@ struct TextGenerator {
             // Normalize baselines based on drawing layout.
 //            let baseline = CGFloat(strokeIndex / 7 * 81) + 140
 //            let baseline = CGFloat(strokeIndex / 7 * 81) + 70
-//            UIScreen.main.bounds.width
-            let baseline = -letter.bounds.minY
-            let baseAxis = -letter.bounds.minX
-            let baseAxis2 = letter.bounds.height
-            let baseAxis3 = letter.bounds.width
-            let baseAxis4 = letter.bounds.maxX
-            let baseAxis5 = letter.bounds.minX
-            let baseAxis6 = letter.bounds.midX
-            let baseAxis7 = letter.bounds.standardized
-            let baseAxis8 = letter.bounds.origin
-            let baseAxiz = drawing.bounds.midX / 2
-            let baseAxiz2 = drawing.bounds.minX
-            let baseAxiz3 = drawing.bounds.maxX
-            let baseAxiz4 = drawing.bounds.size.width / 6
-            let baseAxiz5 = drawing.bounds.standardized
-            let baseAxiz6 = drawing.bounds.origin
-            let baseAxiz7 = drawing.bounds.size.width / 4
-            let baseAxiz8 = drawing.bounds.size.height / 2.25
-//            letter.transform(using: CGAffineTransform(translationX: baseAxis, y: baseline))
-            letter.transform(using: CGAffineTransform(translationX: baseAxis + 85, y: baseline - 70))
             
-//            let baselineDouble = baseline * 2
-//            letter.transform(using: CGAffineTransform(translationX: baseAxis, y: baselineDouble))
+            let baseAxis = -letter.bounds.minX
+            let baseline = -letter.bounds.minY
+            
+            var baseWidth : CGFloat = 85
+            
+            if UIScreen.main.bounds.width < 1000 {
+                baseWidth = 65
+            }
+            else if UIScreen.main.bounds.width < 1100 {
+                baseWidth = 85
+            }
+            else if UIScreen.main.bounds.width < 1200 {
+                baseWidth = 85
+            }
+            else if UIScreen.main.bounds.width < 1400 {
+                baseWidth = 85
+            }
+            
+//            let baseHeight = CGFloat(-70)
+            let baseHeight = CGFloat(-75)
+            
+            letter.transform(using: CGAffineTransform(translationX: baseAxis + baseWidth, y: baseline + baseHeight))
+//            letter.transform(using: CGAffineTransform(translationX: baseAxis + 85, y: baseline - 70))
+
 //            letter.transform(using: CGAffineTransform(translationX: baseAxiz4, y: baseAxiz8))
 //            letter.transform(using: CGAffineTransform(translationX: -letter.bounds.minX, y: -baseline))
             
