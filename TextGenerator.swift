@@ -1,9 +1,8 @@
 //
-//  TextGenerator.swift
-//  SwiftUIPlayground
+//  ContentView.swift
+//  WWDC
 //
 //  Created by 송재훈 on 2023/04/02.
-//
 
 /*
 See LICENSE folder for this sample’s licensing information.
@@ -17,7 +16,7 @@ import PencilKit
 struct TextGenerator {
     let lowercaseDrawings: [PKDrawing]
     let uppercaseDrawings: [PKDrawing]
-
+    
     // The number of strokes in each letter of the alphabet, for upper/lowercase assets.
     static let lowercaseStrokeCount = [1, 1, 1, 1, 1, 2, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1]
     static let uppercaseStrokeCount = [3, 2, 1, 2, 4, 3, 2, 3, 3, 2, 2, 1, 2, 2, 1, 2, 2, 2, 1, 2, 1, 1, 1, 2, 2, 1]
@@ -30,7 +29,7 @@ struct TextGenerator {
               let uppercaseData = NSDataAsset(name: "uppercase")?.data, let uppercase = try? PKDrawing(data: uppercaseData) else {
             fatalError("Could not load font drawing assets.")
         }
-            
+        
         // Split the drawings up into individual letters.
         lowercaseDrawings = TextGenerator.loadAndSplitDrawing(lowercase, strokeCount: TextGenerator.lowercaseStrokeCount)
         uppercaseDrawings = TextGenerator.loadAndSplitDrawing(uppercase, strokeCount: TextGenerator.uppercaseStrokeCount)
@@ -66,11 +65,9 @@ struct TextGenerator {
         }
         
         var textDrawing = PKDrawing()
-//        let textMargin: CGFloat = 100
-        let practiceScale: CGFloat = 5.0
+        let practiceScale: CGFloat = 3.0
         let textMargin: CGFloat = 0
         let lineHeight: CGFloat = 80 * practiceScale
-        let spaceWidth: CGFloat = 40 * practiceScale
         let letterSpacing: CGFloat = 2
         var letterPosition = CGPoint(x: 0, y: 0)
         var didJustWrap = false
@@ -107,23 +104,14 @@ struct TextGenerator {
                 // Get the letter and align it.
                 letter.transform(using: CGAffineTransform(scaleX: practiceScale, y: practiceScale)
                     .concatenating(CGAffineTransform(translationX: letterPosition.x, y: letterPosition.y)))
-//                letter.transform(using: CGAffineTransform(scaleX: practiceScale, y: practiceScale).concatenating(CGAffineTransform(translationX: xValue, y: yValue)))
-                
                 textDrawing.append(letter)
-                
-                // Move for the next letter.
-//                letterPosition.x += letter.bounds.width + letterSpacing
             }
-            
-            // Add a space.
-//            letterPosition.x += spaceWidth
         }
         
         return textDrawing
     }
     
     // MARK: - Font loading
-    
     static func loadAndSplitDrawing(_ drawing: PKDrawing, strokeCount: [Int]) -> [PKDrawing] {
         // Adjust the strokes to look better for a template.
         let adjustedStrokes = drawing.strokes.map { stroke -> PKStroke in
@@ -132,12 +120,11 @@ struct TextGenerator {
             stroke.ink = PKInk(.pen, color: TextGenerator.templateColor)
             // Adjust the stroke widths to be more uniform.
             let newPoints = stroke.path.indices.compactMap { index -> PKStrokePoint? in
-                
                 let point = stroke.path[index]
                 let adjustedPoint = PKStrokePoint(
                     location: point.location,
                     timeOffset: point.timeOffset,
-                    size: CGSize(width: point.size.width * 0.8, height: point.size.height * 0.8), // 폰트 두께
+                    size: CGSize(width: point.size.width * 0.80, height: point.size.height * 0.8),
                     opacity: point.opacity,
                     force: point.force,
                     azimuth: point.azimuth,
@@ -155,35 +142,27 @@ struct TextGenerator {
             var letter = PKDrawing(strokes: adjustedStrokes[startIndex..<(startIndex + strokeCount)])
             
             // Normalize baselines based on drawing layout.
-//            let baseline = CGFloat(strokeIndex / 7 * 81) + 140
-//            let baseline = CGFloat(strokeIndex / 7 * 81) + 70
-            
-            let baseAxis = -letter.bounds.minX
-            let baseline = -letter.bounds.minY
+            var baseAxis = -letter.bounds.minX
+            var baseline = -letter.bounds.minY
             
             var baseWidth : CGFloat = 85
+            var baseHeight : CGFloat = -75
             
-            if UIScreen.main.bounds.width < 1000 {
-                baseWidth = 65
+            // 12.9 = {1366, 1024}
+            if UIScreen.main.bounds.size.width >= UIScreen.main.bounds.size.height {
+//                baseWidth = 205
+                baseWidth = 175
+                baseHeight = -65
+                
             }
-            else if UIScreen.main.bounds.width < 1100 {
-                baseWidth = 85
+            else {
+                baseWidth = UIScreen.main.bounds.width / 7
+                baseHeight = -55
+                
             }
-            else if UIScreen.main.bounds.width < 1200 {
-                baseWidth = 85
-            }
-            else if UIScreen.main.bounds.width < 1400 {
-                baseWidth = 85
-            }
-            
-//            let baseHeight = CGFloat(-70)
-            let baseHeight = CGFloat(-75)
             
             letter.transform(using: CGAffineTransform(translationX: baseAxis + baseWidth, y: baseline + baseHeight))
-//            letter.transform(using: CGAffineTransform(translationX: baseAxis + 85, y: baseline - 70))
-
-//            letter.transform(using: CGAffineTransform(translationX: baseAxiz4, y: baseAxiz8))
-//            letter.transform(using: CGAffineTransform(translationX: -letter.bounds.minX, y: -baseline))
+//            letter.transform(using: CGAffineTransform(translationX: baseline + 235, y: baseAxis - 120))
             
             startIndex += strokeCount
             return letter
@@ -191,3 +170,28 @@ struct TextGenerator {
         return letterDrawings
     }
 }
+
+// 큰 거
+//▿ (1366.0, 146.0, 25.0, 28.0)
+//  ▿ origin: (1366.0, 146.0)
+//    - x: 1366.0
+//    - y: 146.0
+
+//
+//▿ (146.0, -55.0, 37.0, 44.0)
+//  ▿ origin: (146.0, -55.0)
+//    - x: 146.0
+//    - y: -55.0
+
+
+///////// 작은 거
+///▿ (1366.0, 147.0, 25.0, 28.0)
+//▿ origin: (1366.0, 147.0)
+//  - x: 1366.0
+//  - y: 147.0
+//
+//▿ (146.0, -55.0, 32.0, 43.0)
+//  ▿ origin: (146.0, -55.0)
+//    - x: 146.0
+//    - y: -55.0
+
