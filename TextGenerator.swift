@@ -142,8 +142,8 @@ struct TextGenerator {
             var letter = PKDrawing(strokes: adjustedStrokes[startIndex..<(startIndex + strokeCount)])
             
             // Normalize baselines based on drawing layout.
-            var baseAxis = -letter.bounds.minX
-            var baseline = -letter.bounds.minY
+            let baseAxis = -letter.bounds.minX
+            let baseline = -letter.bounds.minY
             
             var baseWidth : CGFloat = 85
             var baseHeight : CGFloat = -75
@@ -184,8 +184,8 @@ struct TextGenerator {
 //    - y: -55.0
 
 
-///////// 작은 거
-///▿ (1366.0, 147.0, 25.0, 28.0)
+// 작은 거
+//▿ (1366.0, 147.0, 25.0, 28.0)
 //▿ origin: (1366.0, 147.0)
 //  - x: 1366.0
 //  - y: 147.0
