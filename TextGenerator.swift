@@ -150,19 +150,26 @@ struct TextGenerator {
             
             // 12.9 = {1366, 1024}
             if UIScreen.main.bounds.size.width >= UIScreen.main.bounds.size.height {
-//                baseWidth = 205
-                baseWidth = 175
-                baseHeight = -65
-                
+                if UIScreen.main.bounds.size.width >= 1300 {
+                    baseWidth = 205
+                    baseHeight = -55
+                }
+                else {
+                    baseWidth = 175
+                    baseHeight = -65
+                }
             }
             else {
                 baseWidth = UIScreen.main.bounds.width / 7
-                baseHeight = -55
-                
+                if UIScreen.main.bounds.size.height >= 1300 {
+                    baseHeight = -45
+                }
+                else {
+                    baseHeight = -50
+                }
             }
             
             letter.transform(using: CGAffineTransform(translationX: baseAxis + baseWidth, y: baseline + baseHeight))
-//            letter.transform(using: CGAffineTransform(translationX: baseline + 235, y: baseAxis - 120))
             
             startIndex += strokeCount
             return letter

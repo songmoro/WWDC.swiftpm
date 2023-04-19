@@ -8,8 +8,8 @@ import SwiftUI
 import SpriteKit
 import PencilKit
 
-// TODO: button 백그라운드
-// TODO: font
+// TODO: 12인치 TextGenerator Position
+// TODO: Banner Position
 
 struct PhysicsCategory {
     static let player: UInt32 = 0b0001
@@ -56,10 +56,15 @@ enum ButtonState {
     case red
 }
 
+enum BackgroundSoundState {
+    case playing
+    case end
+}
+
 var gameState = GameState.tutorial
 
 var nextAlphabet : String = ""
-var nextNumber : Int = 0
+
 
 var isScore : Double = 0.0
 var textRemove : Bool = false
@@ -68,27 +73,30 @@ var isStart : Bool = false
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     let backgroundImage = SKSpriteNode(imageNamed: "backgroundImage")
-    var descriptBanner = SKLabelNode(fontNamed: "Chalkduster")
-    var scoreBanner = SKLabelNode(fontNamed: "Chalkduster")
+    var descriptBanner = SKLabelNode(fontNamed: "Chalkboard SE")
+    var scoreBanner = SKLabelNode(fontNamed: "Chalkboard SE")
     
     var tutorialState = TutorialState.ready
-    var tutorialTitleBanner = SKLabelNode(fontNamed: "Chalkduster")
-    var tutorialGuideBanner : [SKLabelNode] = [SKLabelNode(fontNamed: "Andale Mono"), SKLabelNode(fontNamed: "Andale Mono"), SKLabelNode(fontNamed: "Andale Mono"), SKLabelNode(fontNamed: "Andale Mono"), SKLabelNode(fontNamed: "Andale Mono")]
+    var tutorialTitleBanner = SKLabelNode(fontNamed: "Chalkboard SE")
+    var tutorialGuideBanner : [SKLabelNode] = [SKLabelNode(fontNamed: "Al Nile"), SKLabelNode(fontNamed: "Al Nile"), SKLabelNode(fontNamed: "Al Nile"), SKLabelNode(fontNamed: "Al Nile"), SKLabelNode(fontNamed: "Al Nile")]
     var tutorialCount : Int = 3
     
     var alienTimer = Timer()
     var alienInterval: TimeInterval = 4.0
     var alienSpeed : CGFloat = 1.0
     var alienNumber : Int = 0
+    var nextNumber : Int = 0
     
     var gameScore : Int = 0
     var backgroundSoundPlay : Bool = true
+    var backgroundSoundState = BackgroundSoundState.end
     
     override func didMove(to view: SKView) {
         self.physicsWorld.contactDelegate = self
         self.physicsWorld.gravity = CGVector(dx: 0, dy: 0)
         
         gameState = .tutorial
+//        gameState = .ready
         
         if backgroundSoundPlay {
             backgroundSoundPlay = false
@@ -102,6 +110,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func update(_ currentTime: TimeInterval) {
+        addBackgroundSound()
+        
         switch gameState {
         case .tutorial:
             switch tutorialState {
@@ -140,7 +150,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     }
                 }
             case .morePractice:
-                tutorialTitleBanner.text = "\(tutorialCount) times more!"
+                tutorialTitleBanner.text = "Practice \(tutorialCount) times more!"
                 
                 if nextAlphabet != "" {
                     if textSend {
@@ -242,7 +252,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 
                 if frontTouchedNode != nil {
                     tutorialTitleBanner.text = "Draw on canvas"
-                    tutorialGuideBanner[0].text = "Color circle is starting point"
+                    tutorialGuideBanner[0].text = "Starting point is color circle"
                     tutorialGuideBanner[1].text = "And a dot will guide you how to draw a line"
                     tutorialGuideBanner[2].text = "when you finished, Touch enter button"
                     tutorialGuideBanner[4].text = "\"A\" have 3 lines"
@@ -329,7 +339,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if frontTouchedNode != nil {
                 let alphabet = "\(frontTouchedNode!)"
                 
-                descriptBanner.text = "Draw and Enter!"
+                descriptBanner.text = "Draw on Canvas!"
                 nextAlphabet = alphabet
                 
                 let timeIndex = alphabet.index(alphabet.startIndex, offsetBy: 1)
@@ -480,8 +490,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         alienSpeed *= 1.04
         alienInterval *= 0.98
         
-        nextNumber = alienNumber
-        
         alien.name = "\(alienAlphabet)\(alienNumber)"
         alienNumber += 1
         
@@ -565,11 +573,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func addBackgroundSound() {
+        if backgroundSoundState == .playing {
+            return
+        }
         let backgroundSound = SKAction.playSoundFileNamed("backgroundSound.m4a", waitForCompletion: true)
+        backgroundSoundState = .playing
         
         run(backgroundSound) {
-            SKAction.wait(forDuration: 0.1)
-            self.addBackgroundSound()
+            self.backgroundSoundState = .end
         }
     }
     
@@ -620,7 +631,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 gameState = .end
             case .end:
                 nextAlphabet = ""
-                nextNumber = 0
+                alienNumber = 0
+                alienSpeed = 1.0
+                alienInterval = 4.0
                 addScoreBanner()
             }
         }
@@ -647,6 +660,14 @@ struct ContentView: View {
                 .ignoresSafeArea()
                 .frame(width: geo.size.width, height: geo.size.height)
             
+            RoundedRectangle(cornerRadius: 5)
+                .border(.white)
+                .ignoresSafeArea()
+                .foregroundColor(.white)
+                .opacity(0.1)
+                .frame(width: geo.size.width, height: geo.size.height * 0.25)
+                .frame(maxHeight: .infinity, alignment: .bottom)
+            
             TextGeneratorView(backgroundCanvasView: $backgroundView)
                 .frame(width: geo.size.width, height: geo.size.height * 0.25)
                 .frame(maxHeight: .infinity, alignment: .bottom)
@@ -660,15 +681,18 @@ struct ContentView: View {
                 .frame(maxHeight: .infinity, alignment: .bottom)
             
             HStack() {
-                Button {
-                    let button = ButtonActionView()
-                    
-                    button.Reseting(canvasView: canvasView, backgroundCanvasView: backgroundView)
-                } label: {
+                ZStack(){
                     RoundedRectangle(cornerRadius: 5)
                         .stroke(.white)
-                        .foregroundColor(.clear)
-                        .overlay {
+                        .scaledToFill()
+                        .frame(width: geo.size.width * 0.07, height: geo.size.height * 0.07)
+                        .padding(.leading, geo.size.width * 0.4)
+                    
+                    RoundedRectangle(cornerRadius: 5)
+                        .foregroundColor(.white)
+                        .opacity(0.01)
+                        .scaledToFill()
+                        .overlay(content: {
                             VStack(alignment: .center) {
                                 Image(systemName: "eraser")
                                     .font(.title)
@@ -677,44 +701,54 @@ struct ContentView: View {
                                     .bold()
                             }
                             .foregroundColor(.white)
+                        })
+                        .onTapGesture {
+                            let button = ButtonActionView()
+                            
+                            button.Reseting(canvasView: canvasView, backgroundCanvasView: backgroundView)
                         }
+                        .frame(width: geo.size.width * 0.07, height: geo.size.height * 0.07)
+                        .padding(.leading, geo.size.width * 0.4)
                 }
-                .frame(width: geo.size.width * 0.07, height: geo.size.height * 0.07)
-                .padding(.leading, geo.size.width * 0.4)
                 
                 Spacer()
                 
-                Button {
-                    let button = ButtonActionView()
-                    textSend = true
-                    
-                    isScore = button.Scoring(canvasView: canvasView, backgroundCanvasView: backgroundView)
-                    
-                    if isScore >= 90 {
-                        button.Reseting(canvasView: canvasView, backgroundCanvasView: backgroundView)
-                        isScore = 0
-                        textRemove = true
-                    }
-                } label: {
+                ZStack(){
                     RoundedRectangle(cornerRadius: 5)
                         .stroke(.white)
-                        .foregroundColor(.clear)
-                        .overlay {
+                        .scaledToFill()
+                        .frame(width: geo.size.width * 0.07, height: geo.size.height * 0.07)
+                        .padding(.trailing, geo.size.width * 0.4)
+                    
+                    RoundedRectangle(cornerRadius: 5)
+                        .foregroundColor(.white)
+                        .opacity(0.01)
+                        .scaledToFill()
+                        .overlay(content: {
                             VStack() {
                                 Image(systemName: "paperplane")
                                     .font(.title)
-                                
                                 Text("Enter")
                                     .font(.title3)
                                     .bold()
                             }
-                            .foregroundColor(.white)
+                            .foregroundColor(buttonState == .null ? .white : buttonState == .green ? .green : .red)
+                        })
+                        .onTapGesture {
+                            let button = ButtonActionView()
+                            textSend = true
+                            
+                            isScore = button.Scoring(canvasView: canvasView, backgroundCanvasView: backgroundView)
+                            
+                            if isScore >= 90 {
+                                button.Reseting(canvasView: canvasView, backgroundCanvasView: backgroundView)
+                                isScore = 0
+                                textRemove = true
+                            }
                         }
+                        .frame(width: geo.size.width * 0.07, height: geo.size.height * 0.07)
+                        .padding(.trailing, geo.size.width * 0.4)
                 }
-                .foregroundColor(buttonState == .null ? .white : buttonState == .green ? .green : .red)
-                .frame(width: geo.size.width * 0.07, height: geo.size.height * 0.07)
-                .padding(.trailing, geo.size.width * 0.4)
-                
             }
             .frame(width: geo.size.width, height: geo.size.height * 0.5)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
