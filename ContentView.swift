@@ -1,15 +1,12 @@
 //
 //  ContentView.swift
-//  WWDC
+//  Handwriting Game
 //
 //  Created by 송재훈 on 2023/03/15.
 
 import SwiftUI
 import SpriteKit
 import PencilKit
-
-// TODO: 12인치 TextGenerator Position
-// TODO: Banner Position
 
 struct PhysicsCategory {
     static let player: UInt32 = 0b0001
@@ -62,24 +59,23 @@ enum BackgroundSoundState {
 }
 
 var gameState = GameState.tutorial
+var tutorialState = TutorialState.ready
 
 var nextAlphabet : String = ""
-
 
 var isScore : Double = 0.0
 var textRemove : Bool = false
 var textSend : Bool = false
-var isStart : Bool = false
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     let backgroundImage = SKSpriteNode(imageNamed: "backgroundImage")
     var descriptBanner = SKLabelNode(fontNamed: "Chalkboard SE")
     var scoreBanner = SKLabelNode(fontNamed: "Chalkboard SE")
+    var strokeBanner = SKLabelNode(fontNamed: "Chalkboard SE")
     
-    var tutorialState = TutorialState.ready
     var tutorialTitleBanner = SKLabelNode(fontNamed: "Chalkboard SE")
-    var tutorialGuideBanner : [SKLabelNode] = [SKLabelNode(fontNamed: "Al Nile"), SKLabelNode(fontNamed: "Al Nile"), SKLabelNode(fontNamed: "Al Nile"), SKLabelNode(fontNamed: "Al Nile"), SKLabelNode(fontNamed: "Al Nile")]
-    var tutorialCount : Int = 3
+    var tutorialGuideBanner : [SKLabelNode] = [SKLabelNode(fontNamed: "Chalkboard SE"), SKLabelNode(fontNamed: "Chalkboard SE"), SKLabelNode(fontNamed: "Chalkboard SE"), SKLabelNode(fontNamed: "Chalkboard SE"), SKLabelNode(fontNamed: "Chalkboard SE")]
+    var tutorialCount : Int = 2
     
     var alienTimer = Timer()
     var alienInterval: TimeInterval = 4.0
@@ -88,23 +84,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var nextNumber : Int = 0
     
     var gameScore : Int = 0
-    var backgroundSoundPlay : Bool = true
     var backgroundSoundState = BackgroundSoundState.end
     
     override func didMove(to view: SKView) {
+        self.removeAllChildren()
+        
         self.physicsWorld.contactDelegate = self
         self.physicsWorld.gravity = CGVector(dx: 0, dy: 0)
         
         gameState = .tutorial
-//        gameState = .ready
         
-        if backgroundSoundPlay {
-            backgroundSoundPlay = false
-            addBackgroundSound()
-        }
-        
-        descriptBanner.text = "> Touch to start <"
-        scoreBanner.text = "Portrait is recommended"
+        descriptBanner.text = "> Touch here to Tutorial! <"
+        strokeBanner.text = "Portrait is recommended"
         
         playingSetting()
     }
@@ -138,9 +129,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                             
                             tutorialGuideBanner[0].text = "1. Touch an alien"
                             tutorialGuideBanner[1].text = "2. Find the starting point"
-                            tutorialGuideBanner[2].text = "3. Draw an line"
-                            tutorialGuideBanner[3].text = "4. Touch a Enter"
-                            tutorialGuideBanner[4].text = "(Optional). Touch erase to reset draw"
+                            tutorialGuideBanner[2].text = "3. Draw each line"
+                            tutorialGuideBanner[3].text = "4. Touch \"Enter\""
+                            tutorialGuideBanner[4].text = "(Optional). Touch \"Reset\" to erase draw"
                             
                             tutorialAddAlien()
                         }
@@ -169,11 +160,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                             
                             if tutorialCount == 0 {
                                 tutorialTitleBanner.text = "Finished tutorial!"
-                                tutorialGuideBanner[0].text = "Touch here to start"
-                                tutorialGuideBanner[1].text = "The main game"
+                                tutorialGuideBanner[0].text = "> Touch here to Start! <"
+                                tutorialGuideBanner[1].text = "the main game"
                                 tutorialGuideBanner[2].text = ""
                                 tutorialGuideBanner[3].text = ""
                                 tutorialGuideBanner[4].text = ""
+
                                 tutorialState = .tutorialEnd
                             }
                             else {
@@ -189,20 +181,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 break
             }
         case .ready:
-            descriptBanner.text = "> Touch to start <"
+            descriptBanner.text = "> Touch here to Start! <"
         case .playing:
             if nextAlphabet != "" {
+                let tagetAlphabet = "\(nextAlphabet.first!)"
+                let strokeCount = StrokeCount(alphabet: tagetAlphabet)
+                
+                strokeBanner.text = "\"\(tagetAlphabet)\" is \(strokeCount) line(s)"
+                
                 if textSend {
                     textSend = false
                     
                     if textRemove {
-                        addCorrectSound()
                         let alphabet = self.childNode(withName: "\(nextAlphabet)")
+                        
+                        addCorrectSound()
+                        
                         let nodePosition : CGPoint = alphabet!.position
                         enterAnimation(nodePosition: nodePosition)
                         
                         alphabet?.removeFromParent()
                         
+                        strokeBanner.text = ""
                         nextAlphabet = ""
                         textRemove = false
                         
@@ -214,7 +214,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 }
             }
             else {
-                descriptBanner.text = "Touch alien!"
+                descriptBanner.text = "> Touch an Alien! <"
             }
             scoreBanner.text = "Score : \(gameScore)"
         case .end:
@@ -232,8 +232,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 
                 tutorialSetting()
                 
-                tutorialTitleBanner.text = "Touch an Alien"
+                tutorialTitleBanner.text = "> Touch an Alien! <"
                 tutorialGuideBanner[0].text = "at top of screen"
+                
+                strokeBanner.text = ""
                 
                 tutorialAddAlien()
                 
@@ -251,10 +253,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 let frontTouchedNode = atPoint(location).name
                 
                 if frontTouchedNode != nil {
-                    tutorialTitleBanner.text = "Draw on canvas"
-                    tutorialGuideBanner[0].text = "Starting point is color circle"
-                    tutorialGuideBanner[1].text = "And a dot will guide you how to draw a line"
-                    tutorialGuideBanner[2].text = "when you finished, Touch enter button"
+                    tutorialTitleBanner.text = "> Draw on Canvas! <"
+                    tutorialGuideBanner[0].text = "The starting point is each color circle"
+                    tutorialGuideBanner[1].text = "and each color dot will show you how to draw each line"
+                    tutorialGuideBanner[2].text = "The number of dots equals the number of lines"
+                    tutorialGuideBanner[3].text = "when you finished, Touch \"Enter\""
                     tutorialGuideBanner[4].text = "\"A\" have 3 lines"
                     
                     let alphabet = "\(frontTouchedNode!)"
@@ -274,7 +277,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
                     let alienStroke = SKShapeNode(path: alienStrokePath)
                     alienStroke.strokeColor = .red
-                    alienStroke.lineWidth = 2
+                    alienStroke.lineWidth = 1
                     alienStroke.name = "alienStroke"
                     
                     addChild(alienScope)
@@ -307,7 +310,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 tutorialGuideBanner[2].text = ""
                 tutorialGuideBanner[3].text = ""
                 tutorialGuideBanner[4].text = ""
-                descriptBanner.text = "> Touch to start <"
+                descriptBanner.text = "> Touch here to Start !<"
                 
                 addDescriptBanner()
 
@@ -320,7 +323,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             addAlien()
             playingSetting()
             
-            descriptBanner.text = "Touch alien!"
+            descriptBanner.text = "> Touch an alien! <"
             alienSpeed = 1.0
             alienInterval = 4.0
             gameScore = 0
@@ -339,7 +342,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if frontTouchedNode != nil {
                 let alphabet = "\(frontTouchedNode!)"
                 
-                descriptBanner.text = "Draw on Canvas!"
+                descriptBanner.text = "> Draw on canvas! <"
                 nextAlphabet = alphabet
                 
                 let timeIndex = alphabet.index(alphabet.startIndex, offsetBy: 1)
@@ -428,12 +431,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func addTutorialBanner(){
         tutorialTitleBanner.fontSize = 65
         tutorialTitleBanner.fontColor = SKColor.yellow
-        tutorialTitleBanner.position = CGPoint(x: frame.midX, y: frame.midY + 60)
+        tutorialTitleBanner.position = CGPoint(x: frame.midX, y: frame.midY + 100)
         
         for index in 0...4 {
             tutorialGuideBanner[index].fontSize = 30
             tutorialGuideBanner[index].fontColor = SKColor.white
-            tutorialGuideBanner[index].position = CGPoint(x: frame.midX, y: frame.midY - 65 - CGFloat(index * 40) + 60)
+            tutorialGuideBanner[index].position = CGPoint(x: frame.midX, y: frame.midY - 65 - CGFloat(index * 35) + 120)
             addChild(tutorialGuideBanner[index])
         }
         addChild(tutorialTitleBanner)
@@ -467,15 +470,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func addDescriptBanner() {
         descriptBanner.fontSize = 65
         descriptBanner.fontColor = SKColor.yellow
-        descriptBanner.position = CGPoint(x: frame.midX, y: frame.midY + 60)
+        descriptBanner.position = CGPoint(x: frame.midX, y: frame.midY + 100)
         
         addChild(descriptBanner)
+    }
+    
+    func addStrokeBanner() {
+        strokeBanner.fontSize = 40
+        strokeBanner.fontColor = SKColor.white
+        strokeBanner.position = CGPoint(x: frame.midX, y: frame.midY - 65 + 100)
+        addChild(strokeBanner)
     }
     
     func addScoreBanner() {
         scoreBanner.fontSize = 40
         scoreBanner.fontColor = SKColor.white
-        scoreBanner.position = CGPoint(x: frame.midX, y: frame.midY - 65 + 60)
+        scoreBanner.position = CGPoint(x: frame.midX, y: frame.midY - 65 + 300)
         addChild(scoreBanner)
     }
     
@@ -532,11 +542,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func addPlayer() {
-        let player = SKSpriteNode(color: .clear, size: CGSize(width: frame.size.width * 2, height: frame.size.height * 0.5))
+        let player = SKSpriteNode(color: .clear, size: CGSize(width: frame.size.width * 2, height: frame.size.height * 0.7))
         
         player.color = .clear
         
-        player.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: frame.size.width * 2, height: frame.size.height * 0.5))
+        player.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: frame.size.width * 2, height: frame.size.height * 0.7))
         player.physicsBody?.affectedByGravity = false
         player.physicsBody?.categoryBitMask = PhysicsCategory.player
         player.physicsBody?.collisionBitMask = PhysicsCategory.player
@@ -573,9 +583,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func addBackgroundSound() {
-        if backgroundSoundState == .playing {
+        if backgroundSoundState == .playing || tutorialState == .ready {
             return
         }
+        
         let backgroundSound = SKAction.playSoundFileNamed("backgroundSound.m4a", waitForCompletion: true)
         backgroundSoundState = .playing
         
@@ -597,6 +608,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func playingSetting() {
+        addStrokeBanner()
         addBackground()
         addDescriptBanner()
         addScoreBanner()
@@ -627,13 +639,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 alienTimer.invalidate()
                 playingSetting()
                 
+                alienNumber = 0
+                alienSpeed = 1.0
+                alienInterval = 4.0
+                
+                strokeBanner.text = ""
+                
                 nextAlphabet = ""
                 gameState = .end
             case .end:
                 nextAlphabet = ""
-                alienNumber = 0
-                alienSpeed = 1.0
-                alienInterval = 4.0
+                
                 addScoreBanner()
             }
         }
@@ -750,7 +766,7 @@ struct ContentView: View {
                         .padding(.trailing, geo.size.width * 0.4)
                 }
             }
-            .frame(width: geo.size.width, height: geo.size.height * 0.5)
+            .frame(width: geo.size.width, height: geo.size.height * 0.6)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         }
     }
@@ -781,7 +797,6 @@ struct TextGeneratorView: UIViewRepresentable {
     func makeUIView(context: Context) -> PKCanvasView {
         textTimer = setTimer(interval: 0.1, function: generateText)
         backgroundCanvasView.backgroundColor = .clear
-        backgroundCanvasView.layer.opacity = 0.3
         
         return backgroundCanvasView
     }

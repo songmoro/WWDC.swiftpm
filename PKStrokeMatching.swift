@@ -1,9 +1,8 @@
-/*
-See LICENSE folder for this sample’s licensing information.
-
-Abstract:
-The matching algorithm for PKStrokes.
-*/
+//
+//  PKStrokeMachting.swift
+//  Handwriting Game
+//
+//  Created by 송재훈 on 2023/04/02.
 
 import PencilKit
 

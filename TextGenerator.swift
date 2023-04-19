@@ -1,15 +1,8 @@
 //
-//  ContentView.swift
-//  WWDC
+//  TextGenerator.swift
+//  Handwriting Game
 //
 //  Created by 송재훈 on 2023/04/02.
-
-/*
-See LICENSE folder for this sample’s licensing information.
-
-Abstract:
-Value for generating pencilkit text.
-*/
 
 import PencilKit
 
@@ -177,28 +170,3 @@ struct TextGenerator {
         return letterDrawings
     }
 }
-
-// 큰 거
-//▿ (1366.0, 146.0, 25.0, 28.0)
-//  ▿ origin: (1366.0, 146.0)
-//    - x: 1366.0
-//    - y: 146.0
-
-//
-//▿ (146.0, -55.0, 37.0, 44.0)
-//  ▿ origin: (146.0, -55.0)
-//    - x: 146.0
-//    - y: -55.0
-
-
-// 작은 거
-//▿ (1366.0, 147.0, 25.0, 28.0)
-//▿ origin: (1366.0, 147.0)
-//  - x: 1366.0
-//  - y: 147.0
-//
-//▿ (146.0, -55.0, 32.0, 43.0)
-//  ▿ origin: (146.0, -55.0)
-//    - x: 146.0
-//    - y: -55.0
-
