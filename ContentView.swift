@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  Handwriting Game
 //
-//  Created by 송재훈 on 2023/03/15.
+//  Created by songmoro on 2023/03/15.
 
 import SwiftUI
 import SpriteKit

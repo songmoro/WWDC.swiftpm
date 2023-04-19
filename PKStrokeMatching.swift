@@ -2,7 +2,7 @@
 //  PKStrokeMachting.swift
 //  Handwriting Game
 //
-//  Created by 송재훈 on 2023/04/02.
+//  Created by songmoro on 2023/04/02.
 
 import PencilKit
 
